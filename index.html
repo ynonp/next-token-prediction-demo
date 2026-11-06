@@ -7,7 +7,7 @@
 <style>
   :root {
     --bg: #f6f7f9; --panel: #fff; --text: #1d2330; --muted: #6b7280; --border: #e3e6eb;
-    --accent: #3b5bdb;
+    --accent: #3b5bdb; --special-bg: #e7e9f9; --special-fg: #5c63a8;
     --green-bg: #d3f9d8; --green-fg: #1b6e2c; --green-bar: #37b24d;
     --orange-bg: #ffe8cc; --orange-fg: #a14d00; --orange-bar: #fd7e14;
     --red-bg: #ffd8d8; --red-fg: #b02020; --red-bar: #f03e3e;
@@ -16,7 +16,7 @@
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #14161b; --panel: #1c1f26; --text: #e6e8ec; --muted: #9098a5; --border: #2c313b;
-      --accent: #748ffc;
+      --accent: #748ffc; --special-bg: #272b45; --special-fg: #a5abe0;
       --green-bg: #1f3b26; --green-fg: #8ce99a;
       --orange-bg: #42301a; --orange-fg: #ffc078;
       --red-bg: #4a2224; --red-fg: #ffa8a8;
@@ -26,14 +26,18 @@
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text);
          font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  main { max-width: 860px; margin: 0 auto; padding: 32px 16px 64px; }
+  main { max-width: 900px; margin: 0 auto; padding: 32px 16px 64px; transition: max-width .2s; }
+  main.wide { max-width: 1320px; }
   h1 { font-size: 22px; margin: 0 0 4px; }
-  .sub { color: var(--muted); margin: 0 0 24px; }
+  .sub { color: var(--muted); margin: 0 0 20px; max-width: 760px; }
   .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
   label.cap { display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 6px; }
-  textarea { width: 100%; min-height: 90px; resize: vertical; border: 1px solid var(--border); border-radius: 8px;
+  textarea { width: 100%; min-height: 80px; resize: vertical; border: 1px solid var(--border); border-radius: 8px;
              padding: 10px 12px; font: inherit; background: var(--bg); color: var(--text); }
+  textarea#system { min-height: 44px; }
   textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .field + .field { margin-top: 12px; }
+  .hint { font-weight: 400; text-transform: none; letter-spacing: 0; }
   .controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; margin-top: 12px; }
   .controls label { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
   .controls input[type=range] { width: 110px; }
@@ -43,19 +47,39 @@
   button.primary { background: var(--accent); color: #fff; }
   button.secondary { background: transparent; color: var(--accent); }
   button:disabled { opacity: .5; cursor: default; }
-  #output { white-space: pre-wrap; word-wrap: break-word; font-size: 17px; line-height: 1.9; min-height: 120px; }
-  #output .prompt { color: var(--muted); }
-  #output .placeholder { color: var(--muted); font-style: italic; }
+  select { font: inherit; font-size: 13px; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; padding: 5px 12px; font-size: 13px; font-weight: 600; background: transparent; color: var(--muted); }
+  .seg button.on { background: var(--accent); color: #fff; }
+  .topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-bottom: 14px; }
+  .topbar .desc { font-size: 13px; color: var(--muted); }
+  .viewbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin: 4px 0 10px; font-size: 13px; color: var(--muted); }
+  .viewbar label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  #outputs { display: grid; gap: 16px; grid-template-columns: 1fr; }
+  #outputs.two { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 860px) { #outputs.two { grid-template-columns: 1fr; } }
+  #outputs .panel { margin: 0; min-width: 0; }
+  .out-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 2px; }
+  .out-desc { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .output { white-space: pre-wrap; word-wrap: break-word; font-size: 17px; line-height: 1.9; min-height: 120px; }
+  .output .prompt { color: var(--muted); }
+  .output .special { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--special-bg); color: var(--special-fg);
+                     border-radius: 4px; padding: 2px 4px; white-space: pre; }
+  .output .role { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .output .placeholder { color: var(--muted); font-style: italic; }
   .tok { border-radius: 3px; padding: 1px 0; cursor: default; transition: filter .1s; }
-  .tok:hover, .tok.active { filter: brightness(.9); outline: 1px solid currentColor; }
+  .tok:hover { filter: brightness(.9); outline: 1px solid currentColor; }
   .tok.green  { background: var(--green-bg);  color: var(--green-fg); }
   .tok.orange { background: var(--orange-bg); color: var(--orange-fg); }
   .tok.red    { background: var(--red-bg);    color: var(--red-fg); }
+  .tok.pending { background: transparent; color: var(--text); border-bottom: 1px dotted var(--muted); border-radius: 0; }
+  .tok.end { font: 600 11px ui-monospace, SFMono-Regular, Menlo, monospace; padding: 3px 6px; border-radius: 10px; margin-left: 4px;
+             letter-spacing: .03em; white-space: nowrap; vertical-align: 1px; border: 1px solid currentColor; }
   .status { font-size: 13px; color: var(--muted); margin-top: 10px; min-height: 1.5em; }
-  .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted); }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted); margin-top: 16px; }
   .legend span.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; }
   #tip { position: fixed; z-index: 10; pointer-events: none; background: var(--tip-bg); color: var(--tip-fg);
-         border-radius: 8px; padding: 10px 12px; font-size: 13px; min-width: 240px; max-width: 320px;
+         border-radius: 8px; padding: 10px 12px; font-size: 13px; min-width: 240px; max-width: 340px;
          box-shadow: 0 6px 24px rgba(0,0,0,.25); display: none; }
   #tip .hd { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; opacity: .7; margin-bottom: 6px; }
   #tip .row { display: grid; grid-template-columns: 1fr 52px; gap: 2px 8px; align-items: center; padding: 3px 0; }
@@ -69,25 +93,31 @@
   #tip .row.sel.orange .bar i { background: var(--orange-bar); }
   #tip .row.sel.red .bar i { background: var(--red-bar); }
   #tip .ft { margin-top: 6px; font-size: 12px; opacity: .75; }
+  #tip .pend { font-style: italic; }
   .error { color: var(--red-fg); }
-  select { font: inherit; font-size: 13px; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
-  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-  .seg button { border: 0; border-radius: 0; padding: 5px 12px; font-size: 13px; font-weight: 600; background: transparent; color: var(--muted); }
-  .seg button.on { background: var(--accent); color: #fff; }
-  .out-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-  .out-head label.cap { margin: 0; }
-  .tok.pending { background: transparent; color: var(--text); border-bottom: 1px dotted var(--muted); border-radius: 0; }
-  #tip .pend { opacity: .75; font-style: italic; }
+  [hidden] { display: none !important; }
 </style>
 </head>
 <body>
-<main>
+<main id="main">
   <h1>Next Token Playground</h1>
-  <p class="sub">The model continues your text one token at a time. Hover a word (or token) to see what else it considered.</p>
+  <p class="sub">A language model only ever predicts the next token. Hover any word (or token) to see what else it considered.</p>
 
   <div class="panel">
-    <label class="cap" for="prompt">Prompt</label>
-    <textarea id="prompt">Once upon a time, in a small village by the sea,</textarea>
+    <div class="topbar">
+      <div class="seg" role="group" aria-label="Mode">
+        <button data-mode="completion" class="on">Completion</button><button data-mode="chat">Chat</button><button data-mode="compare">Compare</button>
+      </div>
+      <span class="desc" id="modeDesc"></span>
+    </div>
+    <div class="field" id="systemField" hidden>
+      <label class="cap" for="system">System prompt <span class="hint">(optional)</span></label>
+      <textarea id="system" placeholder="e.g. You are a pirate. Answer in one sentence."></textarea>
+    </div>
+    <div class="field">
+      <label class="cap" for="prompt" id="promptLabel">Prompt</label>
+      <textarea id="prompt">Once upon a time, in a small village by the sea,</textarea>
+    </div>
     <div class="controls">
       <label>Model <select id="model"></select></label>
       <label>Temperature <input id="temp" type="range" min="0" max="2" step="0.05" value="0.8"><output id="tempOut">0.80</output></label>
@@ -98,20 +128,18 @@
     </div>
   </div>
 
-  <div class="panel">
-    <div class="out-head">
-      <label class="cap">Completion</label>
-      <div class="seg" role="group" aria-label="Resolution">
-        <button id="modeWords" class="on">Words</button><button id="modeTokens">Tokens</button>
-      </div>
+  <div class="viewbar">
+    <div class="seg" role="group" aria-label="Resolution">
+      <button id="modeWords" class="on">Words</button><button id="modeTokens">Tokens</button>
     </div>
-    <div id="output"><span class="placeholder">Press Generate to start.</span></div>
-    <div class="status" id="status"></div>
+    <label id="tplToggle" hidden><input type="checkbox" id="showTpl" checked> Show the chat template the model actually sees</label>
   </div>
 
+  <div id="outputs"></div>
+
   <div class="legend">
-    <div><span class="sw" style="background:var(--green-bar)"></span>Chosen word/token far more likely than any alternative (≥3×)</div>
-    <div><span class="sw" style="background:var(--orange-bar)"></span>Chosen word/token only slightly ahead</div>
+    <div><span class="sw" style="background:var(--green-bar)"></span>Chosen far more likely than any alternative (≥3×)</div>
+    <div><span class="sw" style="background:var(--orange-bar)"></span>Chosen only slightly ahead</div>
     <div><span class="sw" style="background:var(--red-bar)"></span>An alternative was more likely (sampling picked a long shot)</div>
     <div><span class="sw" style="border:1px dotted var(--muted)"></span>Word alternatives still being computed</div>
   </div>
@@ -120,17 +148,59 @@
 
 <script>
 const $ = (id) => document.getElementById(id);
-const promptEl = $("prompt"), out = $("output"), statusEl = $("status"), tip = $("tip"), modelSel = $("model");
+const promptEl = $("prompt"), systemEl = $("system"), tip = $("tip"), modelSel = $("model"), outputs = $("outputs");
 const GREEN_RATIO = 3; // chosen p must be >= 3x the best alternative to be "way more likely"
-let controller = null, lastPrompt = null, mode = "words";
-let tokens = [], words = [], hovered = null;
+const END_LABEL = "⏹ end";
+const SPECIAL_RE = /(<\|[a-z_]+\|>|<(?:start|end)_of_turn>)/g;
+let appMode = "completion", resolution = "words", models = {}, runs = [], hovered = null, lastInput = null;
 
-fetch("/api/models").then(r => r.json()).then(({ models, default: def }) => {
-  for (const m of models) modelSel.append(new Option(m, m, false, m === def));
+const MODES = {
+  completion: { desc: "Raw text in, raw text out — the model just continues your document.", label: "Prompt" },
+  chat: { desc: "Your message is wrapped in the model's chat template, so it answers as an assistant.", label: "User message" },
+  compare: { desc: "Same model, same text: raw continuation vs. wrapped in the chat template.", label: "Text / user message" },
+};
+const PANELS = {
+  completion: { title: "Completion · raw text", desc: "The model sees exactly your text and keeps writing the document." },
+  chat: { title: "Chat · with template", desc: "Your text is wrapped as a user turn; the model writes the assistant turn and decides when to stop." },
+};
+
+fetch("/api/models").then(r => r.json()).then(({ models: list, default: def }) => {
+  for (const m of list) {
+    models[m.name] = m;
+    modelSel.append(new Option(m.name, m.name, false, m.name === def));
+  }
+  syncModelOptions();
 });
 $("temp").oninput = e => $("tempOut").textContent = (+e.target.value).toFixed(2);
 $("maxTok").oninput = e => $("maxOut").textContent = e.target.value;
 
+function syncModelOptions() {
+  const needsChat = appMode !== "completion";
+  for (const o of modelSel.options) {
+    const m = models[o.value];
+    o.disabled = needsChat && !m.format;
+    o.textContent = `${m.name} · ${m.instruct ? "instruct" : m.format ? "base" : "raw only"}${needsChat && !m.format ? " (no known chat template)" : ""}`;
+  }
+  if (modelSel.selectedOptions[0]?.disabled) modelSel.value = [...modelSel.options].find(o => !o.disabled)?.value;
+}
+
+function setAppMode(m) {
+  appMode = m;
+  document.querySelectorAll("[data-mode]").forEach(b => b.classList.toggle("on", b.dataset.mode === m));
+  $("modeDesc").textContent = MODES[m].desc;
+  $("promptLabel").textContent = MODES[m].label;
+  $("systemField").hidden = m === "completion";
+  $("tplToggle").hidden = m === "completion";
+  $("main").classList.toggle("wide", m === "compare");
+  // switching between story and Q&A: swap in a fitting example if the default text is untouched
+  if (m !== "completion" && promptEl.value === "Once upon a time, in a small village by the sea,") promptEl.value = "What is the capital of France?";
+  if (m === "completion" && promptEl.value === "What is the capital of France?" ) promptEl.value = "Once upon a time, in a small village by the sea,";
+  syncModelOptions();
+  buildPanels();
+}
+document.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => setAppMode(b.dataset.mode));
+
+/* ---------- classification & formatting ---------- */
 function classify(p, altPs) {
   const best = Math.max(0, ...altPs);
   if (p < best) return "red";
@@ -139,10 +209,132 @@ function classify(p, altPs) {
 }
 const tokCls = t => classify(t.p, t.alts.filter(a => a.token !== t.token).map(a => a.p));
 const wordCls = w => w.alts ? classify(w.p, w.alts.filter(a => !a.chosen).map(a => a.p)) : "pending";
-
-const show = (s) => s.replace(/ /g, "␣").replace(/\n/g, "↵").replace(/\t/g, "⇥") || "∅";
+const show = (s) => s === "" ? END_LABEL : s.replace(/ /g, "␣").replace(/\n/g, "↵").replace(/\t/g, "⇥");
 const pct = (p) => p >= 0.995 ? "100%" : p >= 0.1 ? (p * 100).toFixed(0) + "%" : p >= 0.001 ? (p * 100).toFixed(1) + "%" : "<0.1%";
 
+/* ---------- a Run = one output panel and its generation ---------- */
+class Run {
+  constructor(kind) {
+    this.kind = kind; // "completion" | "chat"
+    this.el = document.createElement("div");
+    this.el.className = "panel";
+    this.el.innerHTML = `<div class="out-title"></div><div class="out-desc"></div><div class="output"><span class="placeholder">Press Generate to start.</span></div><div class="status"></div>`;
+    this.el.querySelector(".out-title").textContent = PANELS[kind].title;
+    this.el.querySelector(".out-desc").textContent = PANELS[kind].desc;
+    this.out = this.el.querySelector(".output");
+    this.statusEl = this.el.querySelector(".status");
+    this.out._run = this;
+    this.reset();
+  }
+  reset() { this.tokens = []; this.words = []; this.phase = ""; this.promptText = null; this.input = null; this.reason = null; }
+
+  renderPrompt() {
+    this.out.querySelectorAll(".prompt").forEach(n => n.remove());
+    if (this.promptText == null) return;
+    const wrap = document.createElement("span"); wrap.className = "prompt";
+    if (this.kind === "chat" && !$("showTpl").checked) {
+      const add = (cls, text) => { const s = document.createElement("span"); s.className = cls; s.textContent = text; wrap.append(s); };
+      if (this.input.system) { add("role", "System  "); add("", this.input.system + "\n"); }
+      add("role", "User  "); add("", this.input.prompt + "\n"); add("role", "Assistant  ");
+    } else {
+      for (const part of this.promptText.split(SPECIAL_RE)) {
+        if (!part) continue;
+        const s = document.createElement("span");
+        if (SPECIAL_RE.test(part)) s.className = "special";
+        SPECIAL_RE.lastIndex = 0;
+        s.textContent = part; wrap.append(s);
+      }
+    }
+    this.out.prepend(wrap);
+  }
+  makeSpan(kind, idx) {
+    const s = document.createElement("span");
+    s.dataset.kind = kind; s.dataset.idx = idx;
+    const isEnd = kind === "tok" ? this.tokens[idx].end : this.words[idx].end;
+    const cls = kind === "tok" ? tokCls(this.tokens[idx]) : wordCls(this.words[idx]);
+    s.className = "tok " + cls + (isEnd ? " end" : "");
+    s.textContent = isEnd ? END_LABEL : (kind === "tok" ? this.tokens[idx].token : this.words[idx].text);
+    return s;
+  }
+  renderAll() {
+    this.out.querySelectorAll(".tok, .placeholder").forEach(s => s.remove());
+    this.renderPrompt();
+    if (resolution === "tokens") this.tokens.forEach((_, i) => this.out.append(this.makeSpan("tok", i)));
+    else this.words.forEach((_, i) => this.out.append(this.makeSpan("word", i)));
+    this.updateStatus();
+  }
+  updateStatus() {
+    if (!this.tokens.length && !this.phase) return;
+    const items = resolution === "tokens" ? this.tokens.map(tokCls) : this.words.map(wordCls);
+    const c = { green: 0, orange: 0, red: 0, pending: 0 };
+    items.forEach(k => c[k]++);
+    const n = resolution === "tokens" ? this.tokens.length : this.words.length;
+    const stop = this.reason === "stop" ? " · model chose to stop" : this.reason === "length" ? " · hit max tokens" : "";
+    this.statusEl.textContent = `${this.phase}${n} ${resolution} · ${c.green} confident · ${c.orange} close call · ${c.red} long shot` +
+      (c.pending ? ` · ${c.pending} computing…` : "") + stop;
+  }
+  onMessage(msg) {
+    if (msg.type === "prompt") { this.promptText = msg.text; this.renderPrompt(); }
+    else if (msg.type === "token") {
+      this.tokens.push(msg);
+      if (!this.words[msg.w]) this.words[msg.w] = { text: "", p: 1, toks: [], alts: null, end: msg.end };
+      const w = this.words[msg.w];
+      w.text += msg.token; w.p *= msg.p; w.toks.push(this.tokens.length - 1);
+      if (resolution === "tokens") this.out.append(this.makeSpan("tok", this.tokens.length - 1));
+      else {
+        const existing = this.out.querySelector(`.tok[data-kind="word"][data-idx="${msg.w}"]`);
+        if (existing) existing.textContent = w.text; else this.out.append(this.makeSpan("word", msg.w));
+      }
+    } else if (msg.type === "word") {
+      const w = this.words[msg.w];
+      if (msg.error) w.alts = [{ word: w.text, p: w.p, chosen: true }];
+      else { w.p = msg.p; w.alts = msg.alts; }
+      const span = this.out.querySelector(`.tok[data-kind="word"][data-idx="${msg.w}"]`);
+      if (span) { span.className = "tok " + wordCls(w) + (w.end ? " end" : ""); if (hovered === span) renderTip(span); }
+    } else if (msg.type === "gen_done") { this.phase = "Computing word alternatives… "; this.reason = msg.reason; }
+    else if (msg.type === "done") this.phase = "";
+    else if (msg.type === "error") throw new Error(msg.error);
+    this.updateStatus();
+  }
+  async start(input, signal) {
+    this.reset(); this.input = input; this.phase = "Generating… ";
+    this.out.innerHTML = "";
+    this.statusEl.textContent = "Generating… (the first run of a model takes a few seconds to load it)";
+    try {
+      const res = await fetch("/api/complete", {
+        method: "POST", signal, headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...input, mode: this.kind, seed: Math.floor(Math.random() * 2 ** 31) }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      const reader = res.body.getReader(), dec = new TextDecoder();
+      let buf = "";
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split("\n"); buf = lines.pop();
+        for (const line of lines) if (line.trim()) this.onMessage(JSON.parse(line));
+      }
+      this.phase = ""; this.updateStatus();
+    } catch (err) {
+      if (err.name === "AbortError") return;
+      this.statusEl.innerHTML = ""; const e = document.createElement("span"); e.className = "error";
+      e.textContent = "Error: " + err.message; this.statusEl.append(e);
+    }
+  }
+}
+
+function buildPanels() {
+  controller?.abort();
+  tip.style.display = "none";
+  const kinds = appMode === "compare" ? ["completion", "chat"] : [appMode];
+  runs = kinds.map(k => new Run(k));
+  outputs.className = runs.length > 1 ? "two" : "";
+  outputs.replaceChildren(...runs.map(r => r.el));
+  $("rerun").disabled = true;
+}
+
+/* ---------- tooltip ---------- */
 function rowsHtml(rows, cls) {
   const maxP = Math.max(...rows.map(r => r.p), 1e-9);
   return rows.map(r => {
@@ -153,32 +345,34 @@ function rowsHtml(rows, cls) {
     return div.outerHTML;
   }).join("");
 }
-
 function renderTip(span) {
   hovered = span;
-  const kind = span.dataset.kind, idx = +span.dataset.idx;
+  const run = span.closest(".output")._run, kind = span.dataset.kind, idx = +span.dataset.idx;
+  const endNote = `<div class="ft">${END_LABEL} = the model's end-of-turn token: choosing it is how the model decides to stop.</div>`;
   let html;
   if (kind === "tok") {
-    const t = tokens[idx], cls = tokCls(t);
+    const t = run.tokens[idx], cls = tokCls(t);
     const rows = t.alts.slice().sort((a, b) => b.p - a.p).map(a => ({ label: a.token, p: a.p, sel: a.token === t.token }));
     const outside = !rows.some(r => r.sel);
     if (outside) rows.push({ label: t.token, p: t.p, sel: true });
     html = `<div class="hd">Next-token candidates · token ${idx + 1}</div>` + rowsHtml(rows, cls) +
-      (outside ? `<div class="ft">Chosen token was outside the top ${t.alts.length}.</div>` : "");
+      (outside ? `<div class="ft">Chosen token was outside the top ${t.alts.length}.</div>` : "") +
+      (t.end || t.alts.some(a => a.token === "") ? endNote : "");
   } else {
-    const w = words[idx], cls = wordCls(w);
-    const parts = w.toks.map(i => tokens[i].token);
+    const w = run.words[idx], cls = wordCls(w);
+    const parts = w.toks.map(i => run.tokens[i]);
     const hd = `<div class="hd">Next-word candidates · word ${idx + 1}</div>`;
     if (!w.alts) {
       html = hd + rowsHtml([{ label: w.text, p: w.p, sel: true }], "orange") + `<div class="ft pend">Computing alternative words…</div>`;
     } else {
       html = hd + rowsHtml(w.alts.slice(0, 6).map(a => ({ label: a.word + (a.truncated ? "…" : ""), p: a.p, sel: a.chosen })), cls) +
-        (parts.length > 1 ? `<div class="ft">Built from ${parts.length} tokens: ${parts.map(p => "<code></code>").join(" · ")} — probabilities multiplied.</div>` : "");
+        (parts.length > 1 ? `<div class="ft">Built from ${parts.length} tokens: <span class="parts"></span> — probabilities multiplied.</div>` : "") +
+        (w.end || w.alts.some(a => a.word === "") ? endNote : "");
     }
   }
   tip.innerHTML = html;
-  const codes = tip.querySelectorAll(".ft code");
-  if (kind === "word" && codes.length) words[idx].toks.forEach((ti, k) => codes[k].textContent = `${show(tokens[ti].token)} ${pct(tokens[ti].p)}`);
+  const partsEl = tip.querySelector(".parts");
+  if (partsEl) partsEl.textContent = run.words[idx].toks.map(i => `${show(run.tokens[i].token)} ${pct(run.tokens[i].p)}`).join(" · ");
   tip.style.display = "block";
   const r = span.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
   const x = Math.min(Math.max(8, r.left), innerWidth - tw - 8);
@@ -186,103 +380,42 @@ function renderTip(span) {
   if (y + th > innerHeight - 8) y = r.top - th - 8;
   tip.style.left = x + "px"; tip.style.top = y + "px";
 }
-out.addEventListener("mouseover", e => { const s = e.target.closest(".tok"); if (s) renderTip(s); });
-out.addEventListener("mouseout", e => { if (e.target.closest(".tok")) { tip.style.display = "none"; hovered = null; } });
+outputs.addEventListener("mouseover", e => { const s = e.target.closest(".tok"); if (s) renderTip(s); });
+outputs.addEventListener("mouseout", e => { if (e.target.closest(".tok")) { tip.style.display = "none"; hovered = null; } });
 
-function makeSpan(kind, idx) {
-  const s = document.createElement("span");
-  s.dataset.kind = kind; s.dataset.idx = idx;
-  if (kind === "tok") { s.className = "tok " + tokCls(tokens[idx]); s.textContent = tokens[idx].token; }
-  else { s.className = "tok " + wordCls(words[idx]); s.textContent = words[idx].text; }
-  return s;
-}
-function renderAll() {
-  tip.style.display = "none";
-  out.querySelectorAll(".tok").forEach(s => s.remove());
-  if (mode === "tokens") tokens.forEach((_, i) => out.append(makeSpan("tok", i)));
-  else words.forEach((_, i) => out.append(makeSpan("word", i)));
-}
-function setMode(m) {
-  mode = m;
+/* ---------- view toggles ---------- */
+function setResolution(m) {
+  resolution = m;
   $("modeWords").classList.toggle("on", m === "words");
   $("modeTokens").classList.toggle("on", m === "tokens");
-  renderAll(); updateStatus();
+  tip.style.display = "none";
+  runs.forEach(r => r.tokens.length && r.renderAll());
 }
-$("modeWords").onclick = () => setMode("words");
-$("modeTokens").onclick = () => setMode("tokens");
+$("modeWords").onclick = () => setResolution("words");
+$("modeTokens").onclick = () => setResolution("tokens");
+$("showTpl").onchange = () => runs.forEach(r => r.renderPrompt());
 
-let phase = "";
-function updateStatus() {
-  if (!tokens.length && !phase) return;
-  const items = mode === "tokens" ? tokens.map(tokCls) : words.map(wordCls);
-  const c = { green: 0, orange: 0, red: 0, pending: 0 };
-  items.forEach(k => c[k]++);
-  const unit = mode === "tokens" ? "tokens" : "words";
-  statusEl.textContent = `${phase}${items.length} ${unit} · ${c.green} confident · ${c.orange} close call · ${c.red} long shot` +
-    (c.pending ? ` · ${c.pending} computing…` : "");
-}
-
-function onMessage(msg) {
-  if (msg.type === "token") {
-    tokens.push(msg);
-    if (!words[msg.w]) words[msg.w] = { text: "", p: 1, toks: [], alts: null };
-    const w = words[msg.w];
-    w.text += msg.token; w.p *= msg.p; w.toks.push(tokens.length - 1);
-    if (mode === "tokens") out.append(makeSpan("tok", tokens.length - 1));
-    else {
-      const existing = out.querySelector(`.tok[data-kind="word"][data-idx="${msg.w}"]`);
-      if (existing) existing.textContent = w.text; else out.append(makeSpan("word", msg.w));
-    }
-  } else if (msg.type === "word") {
-    const w = words[msg.w];
-    if (msg.error) { w.alts = [{ word: w.text, p: w.p, chosen: true }]; }
-    else { w.p = msg.p; w.alts = msg.alts; }
-    const span = out.querySelector(`.tok[data-kind="word"][data-idx="${msg.w}"]`);
-    if (span) { span.className = "tok " + wordCls(w); if (hovered === span) renderTip(span); }
-  } else if (msg.type === "gen_done") {
-    phase = "Computing word alternatives… ";
-  } else if (msg.type === "done") {
-    phase = "";
-  } else if (msg.type === "error") throw new Error(msg.error);
-  updateStatus();
-}
-
-async function run(prompt) {
+/* ---------- run ---------- */
+let controller = null;
+function run(input) {
   controller?.abort();
   controller = new AbortController();
-  lastPrompt = prompt;
-  tokens = []; words = []; phase = "Generating… ";
+  lastInput = input;
   $("rerun").disabled = false;
   tip.style.display = "none";
-  out.innerHTML = "";
-  const p = document.createElement("span"); p.className = "prompt"; p.textContent = prompt; out.append(p);
-  statusEl.textContent = "Generating… (first run of a model may take a few seconds to load)";
-  try {
-    const res = await fetch("/api/complete", {
-      method: "POST", signal: controller.signal, headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, model: modelSel.value, temperature: +$("temp").value,
-                             max_tokens: +$("maxTok").value, seed: Math.floor(Math.random() * 2 ** 31) }),
-    });
-    const reader = res.body.getReader(), dec = new TextDecoder();
-    let buf = "";
-    for (;;) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buf += dec.decode(value, { stream: true });
-      const lines = buf.split("\n"); buf = lines.pop();
-      for (const line of lines) if (line.trim()) onMessage(JSON.parse(line));
-    }
-    phase = ""; updateStatus();
-  } catch (err) {
-    if (err.name === "AbortError") return;
-    statusEl.innerHTML = ""; const e = document.createElement("span"); e.className = "error";
-    e.textContent = "Error: " + err.message; statusEl.append(e);
-  }
+  runs.forEach(r => r.start(input, controller.signal));
 }
+const currentInput = () => ({
+  prompt: promptEl.value, system: appMode === "completion" ? "" : systemEl.value,
+  model: modelSel.value, temperature: +$("temp").value, max_tokens: +$("maxTok").value,
+});
+$("gen").onclick = () => run(currentInput());
+$("rerun").onclick = () => run(lastInput ?? currentInput());
+for (const el of [promptEl, systemEl]) el.addEventListener("keydown", e => {
+  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); run(currentInput()); }
+});
 
-$("gen").onclick = () => run(promptEl.value);
-$("rerun").onclick = () => run(lastPrompt ?? promptEl.value);
-promptEl.addEventListener("keydown", e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); run(promptEl.value); } });
+setAppMode("completion");
 </script>
 </body>
 </html>
