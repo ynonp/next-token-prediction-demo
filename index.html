@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Next Token Playground</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #fff; --text: #1d2330; --muted: #6b7280; --border: #e3e6eb;
+    --accent: #3b5bdb;
+    --green-bg: #d3f9d8; --green-fg: #1b6e2c; --green-bar: #37b24d;
+    --orange-bg: #ffe8cc; --orange-fg: #a14d00; --orange-bar: #fd7e14;
+    --red-bg: #ffd8d8; --red-fg: #b02020; --red-bar: #f03e3e;
+    --tip-bg: #1d2330; --tip-fg: #f1f3f5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161b; --panel: #1c1f26; --text: #e6e8ec; --muted: #9098a5; --border: #2c313b;
+      --accent: #748ffc;
+      --green-bg: #1f3b26; --green-fg: #8ce99a;
+      --orange-bg: #42301a; --orange-fg: #ffc078;
+      --red-bg: #4a2224; --red-fg: #ffa8a8;
+      --tip-bg: #2a2f39; --tip-fg: #f1f3f5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  label.cap { display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 6px; }
+  textarea { width: 100%; min-height: 90px; resize: vertical; border: 1px solid var(--border); border-radius: 8px;
+             padding: 10px 12px; font: inherit; background: var(--bg); color: var(--text); }
+  textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; margin-top: 12px; }
+  .controls label { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .controls input[type=range] { width: 110px; }
+  .controls output { font-variant-numeric: tabular-nums; color: var(--text); min-width: 2.5em; }
+  .spacer { flex: 1; }
+  button { font: inherit; font-weight: 600; border-radius: 8px; padding: 8px 16px; cursor: pointer; border: 1px solid var(--accent); }
+  button.primary { background: var(--accent); color: #fff; }
+  button.secondary { background: transparent; color: var(--accent); }
+  button:disabled { opacity: .5; cursor: default; }
+  #output { white-space: pre-wrap; word-wrap: break-word; font-size: 17px; line-height: 1.9; min-height: 120px; }
+  #output .prompt { color: var(--muted); }
+  #output .placeholder { color: var(--muted); font-style: italic; }
+  .tok { border-radius: 3px; padding: 1px 0; cursor: default; transition: filter .1s; }
+  .tok:hover, .tok.active { filter: brightness(.9); outline: 1px solid currentColor; }
+  .tok.green  { background: var(--green-bg);  color: var(--green-fg); }
+  .tok.orange { background: var(--orange-bg); color: var(--orange-fg); }
+  .tok.red    { background: var(--red-bg);    color: var(--red-fg); }
+  .status { font-size: 13px; color: var(--muted); margin-top: 10px; min-height: 1.5em; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted); }
+  .legend span.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; }
+  #tip { position: fixed; z-index: 10; pointer-events: none; background: var(--tip-bg); color: var(--tip-fg);
+         border-radius: 8px; padding: 10px 12px; font-size: 13px; min-width: 240px; max-width: 320px;
+         box-shadow: 0 6px 24px rgba(0,0,0,.25); display: none; }
+  #tip .hd { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; opacity: .7; margin-bottom: 6px; }
+  #tip .row { display: grid; grid-template-columns: 1fr 52px; gap: 2px 8px; align-items: center; padding: 3px 0; }
+  #tip .row .t { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+  #tip .row .p { text-align: right; font-variant-numeric: tabular-nums; }
+  #tip .row .bar { grid-column: 1 / -1; height: 4px; background: rgba(255,255,255,.12); border-radius: 2px; overflow: hidden; }
+  #tip .row .bar i { display: block; height: 100%; background: #868e96; }
+  #tip .row.sel .t, #tip .row.sel .p { font-weight: 700; }
+  #tip .row.sel .t::after { content: "  ← chosen"; font-family: system-ui, sans-serif; font-weight: 400; opacity: .75; font-size: 11px; }
+  #tip .row.sel.green .bar i { background: var(--green-bar); }
+  #tip .row.sel.orange .bar i { background: var(--orange-bar); }
+  #tip .row.sel.red .bar i { background: var(--red-bar); }
+  #tip .ft { margin-top: 6px; font-size: 12px; opacity: .75; }
+  .error { color: var(--red-fg); }
+  select { font: inherit; font-size: 13px; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; padding: 5px 12px; font-size: 13px; font-weight: 600; background: transparent; color: var(--muted); }
+  .seg button.on { background: var(--accent); color: #fff; }
+  .out-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .out-head label.cap { margin: 0; }
+  .tok.pending { background: transparent; color: var(--text); border-bottom: 1px dotted var(--muted); border-radius: 0; }
+  #tip .pend { opacity: .75; font-style: italic; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Next Token Playground</h1>
+  <p class="sub">The model continues your text one token at a time. Hover a word (or token) to see what else it considered.</p>
+
+  <div class="panel">
+    <label class="cap" for="prompt">Prompt</label>
+    <textarea id="prompt">Once upon a time, in a small village by the sea,</textarea>
+    <div class="controls">
+      <label>Model <select id="model"></select></label>
+      <label>Temperature <input id="temp" type="range" min="0" max="2" step="0.05" value="0.8"><output id="tempOut">0.80</output></label>
+      <label>Max tokens <input id="maxTok" type="range" min="5" max="200" step="5" value="60"><output id="maxOut">60</output></label>
+      <span class="spacer"></span>
+      <button id="gen" class="primary" title="Ctrl/⌘ + Enter">Generate</button>
+      <button id="rerun" class="secondary" disabled>Rerun ↻</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="out-head">
+      <label class="cap">Completion</label>
+      <div class="seg" role="group" aria-label="Resolution">
+        <button id="modeWords" class="on">Words</button><button id="modeTokens">Tokens</button>
+      </div>
+    </div>
+    <div id="output"><span class="placeholder">Press Generate to start.</span></div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="legend">
+    <div><span class="sw" style="background:var(--green-bar)"></span>Chosen word/token far more likely than any alternative (≥3×)</div>
+    <div><span class="sw" style="background:var(--orange-bar)"></span>Chosen word/token only slightly ahead</div>
+    <div><span class="sw" style="background:var(--red-bar)"></span>An alternative was more likely (sampling picked a long shot)</div>
+    <div><span class="sw" style="border:1px dotted var(--muted)"></span>Word alternatives still being computed</div>
+  </div>
+</main>
+<div id="tip"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const promptEl = $("prompt"), out = $("output"), statusEl = $("status"), tip = $("tip"), modelSel = $("model");
+const GREEN_RATIO = 3; // chosen p must be >= 3x the best alternative to be "way more likely"
+let controller = null, lastPrompt = null, mode = "words";
+let tokens = [], words = [], hovered = null;
+
+fetch("/api/models").then(r => r.json()).then(({ models, default: def }) => {
+  for (const m of models) modelSel.append(new Option(m, m, false, m === def));
+});
+$("temp").oninput = e => $("tempOut").textContent = (+e.target.value).toFixed(2);
+$("maxTok").oninput = e => $("maxOut").textContent = e.target.value;
+
+function classify(p, altPs) {
+  const best = Math.max(0, ...altPs);
+  if (p < best) return "red";
+  if (best === 0 || p >= GREEN_RATIO * best) return "green";
+  return "orange";
+}
+const tokCls = t => classify(t.p, t.alts.filter(a => a.token !== t.token).map(a => a.p));
+const wordCls = w => w.alts ? classify(w.p, w.alts.filter(a => !a.chosen).map(a => a.p)) : "pending";
+
+const show = (s) => s.replace(/ /g, "␣").replace(/\n/g, "↵").replace(/\t/g, "⇥") || "∅";
+const pct = (p) => p >= 0.995 ? "100%" : p >= 0.1 ? (p * 100).toFixed(0) + "%" : p >= 0.001 ? (p * 100).toFixed(1) + "%" : "<0.1%";
+
+function rowsHtml(rows, cls) {
+  const maxP = Math.max(...rows.map(r => r.p), 1e-9);
+  return rows.map(r => {
+    const div = document.createElement("div");
+    div.className = "row" + (r.sel ? " sel " + cls : "");
+    div.innerHTML = `<span class="t"></span><span class="p">${pct(r.p)}</span><span class="bar"><i style="width:${(r.p / maxP * 100).toFixed(1)}%"></i></span>`;
+    div.querySelector(".t").textContent = show(r.label);
+    return div.outerHTML;
+  }).join("");
+}
+
+function renderTip(span) {
+  hovered = span;
+  const kind = span.dataset.kind, idx = +span.dataset.idx;
+  let html;
+  if (kind === "tok") {
+    const t = tokens[idx], cls = tokCls(t);
+    const rows = t.alts.slice().sort((a, b) => b.p - a.p).map(a => ({ label: a.token, p: a.p, sel: a.token === t.token }));
+    const outside = !rows.some(r => r.sel);
+    if (outside) rows.push({ label: t.token, p: t.p, sel: true });
+    html = `<div class="hd">Next-token candidates · token ${idx + 1}</div>` + rowsHtml(rows, cls) +
+      (outside ? `<div class="ft">Chosen token was outside the top ${t.alts.length}.</div>` : "");
+  } else {
+    const w = words[idx], cls = wordCls(w);
+    const parts = w.toks.map(i => tokens[i].token);
+    const hd = `<div class="hd">Next-word candidates · word ${idx + 1}</div>`;
+    if (!w.alts) {
+      html = hd + rowsHtml([{ label: w.text, p: w.p, sel: true }], "orange") + `<div class="ft pend">Computing alternative words…</div>`;
+    } else {
+      html = hd + rowsHtml(w.alts.slice(0, 6).map(a => ({ label: a.word + (a.truncated ? "…" : ""), p: a.p, sel: a.chosen })), cls) +
+        (parts.length > 1 ? `<div class="ft">Built from ${parts.length} tokens: ${parts.map(p => "<code></code>").join(" · ")} — probabilities multiplied.</div>` : "");
+    }
+  }
+  tip.innerHTML = html;
+  const codes = tip.querySelectorAll(".ft code");
+  if (kind === "word" && codes.length) words[idx].toks.forEach((ti, k) => codes[k].textContent = `${show(tokens[ti].token)} ${pct(tokens[ti].p)}`);
+  tip.style.display = "block";
+  const r = span.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+  const x = Math.min(Math.max(8, r.left), innerWidth - tw - 8);
+  let y = r.bottom + 8;
+  if (y + th > innerHeight - 8) y = r.top - th - 8;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+out.addEventListener("mouseover", e => { const s = e.target.closest(".tok"); if (s) renderTip(s); });
+out.addEventListener("mouseout", e => { if (e.target.closest(".tok")) { tip.style.display = "none"; hovered = null; } });
+
+function makeSpan(kind, idx) {
+  const s = document.createElement("span");
+  s.dataset.kind = kind; s.dataset.idx = idx;
+  if (kind === "tok") { s.className = "tok " + tokCls(tokens[idx]); s.textContent = tokens[idx].token; }
+  else { s.className = "tok " + wordCls(words[idx]); s.textContent = words[idx].text; }
+  return s;
+}
+function renderAll() {
+  tip.style.display = "none";
+  out.querySelectorAll(".tok").forEach(s => s.remove());
+  if (mode === "tokens") tokens.forEach((_, i) => out.append(makeSpan("tok", i)));
+  else words.forEach((_, i) => out.append(makeSpan("word", i)));
+}
+function setMode(m) {
+  mode = m;
+  $("modeWords").classList.toggle("on", m === "words");
+  $("modeTokens").classList.toggle("on", m === "tokens");
+  renderAll(); updateStatus();
+}
+$("modeWords").onclick = () => setMode("words");
+$("modeTokens").onclick = () => setMode("tokens");
+
+let phase = "";
+function updateStatus() {
+  if (!tokens.length && !phase) return;
+  const items = mode === "tokens" ? tokens.map(tokCls) : words.map(wordCls);
+  const c = { green: 0, orange: 0, red: 0, pending: 0 };
+  items.forEach(k => c[k]++);
+  const unit = mode === "tokens" ? "tokens" : "words";
+  statusEl.textContent = `${phase}${items.length} ${unit} · ${c.green} confident · ${c.orange} close call · ${c.red} long shot` +
+    (c.pending ? ` · ${c.pending} computing…` : "");
+}
+
+function onMessage(msg) {
+  if (msg.type === "token") {
+    tokens.push(msg);
+    if (!words[msg.w]) words[msg.w] = { text: "", p: 1, toks: [], alts: null };
+    const w = words[msg.w];
+    w.text += msg.token; w.p *= msg.p; w.toks.push(tokens.length - 1);
+    if (mode === "tokens") out.append(makeSpan("tok", tokens.length - 1));
+    else {
+      const existing = out.querySelector(`.tok[data-kind="word"][data-idx="${msg.w}"]`);
+      if (existing) existing.textContent = w.text; else out.append(makeSpan("word", msg.w));
+    }
+  } else if (msg.type === "word") {
+    const w = words[msg.w];
+    if (msg.error) { w.alts = [{ word: w.text, p: w.p, chosen: true }]; }
+    else { w.p = msg.p; w.alts = msg.alts; }
+    const span = out.querySelector(`.tok[data-kind="word"][data-idx="${msg.w}"]`);
+    if (span) { span.className = "tok " + wordCls(w); if (hovered === span) renderTip(span); }
+  } else if (msg.type === "gen_done") {
+    phase = "Computing word alternatives… ";
+  } else if (msg.type === "done") {
+    phase = "";
+  } else if (msg.type === "error") throw new Error(msg.error);
+  updateStatus();
+}
+
+async function run(prompt) {
+  controller?.abort();
+  controller = new AbortController();
+  lastPrompt = prompt;
+  tokens = []; words = []; phase = "Generating… ";
+  $("rerun").disabled = false;
+  tip.style.display = "none";
+  out.innerHTML = "";
+  const p = document.createElement("span"); p.className = "prompt"; p.textContent = prompt; out.append(p);
+  statusEl.textContent = "Generating… (first run of a model may take a few seconds to load)";
+  try {
+    const res = await fetch("/api/complete", {
+      method: "POST", signal: controller.signal, headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt, model: modelSel.value, temperature: +$("temp").value,
+                             max_tokens: +$("maxTok").value, seed: Math.floor(Math.random() * 2 ** 31) }),
+    });
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    let buf = "";
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split("\n"); buf = lines.pop();
+      for (const line of lines) if (line.trim()) onMessage(JSON.parse(line));
+    }
+    phase = ""; updateStatus();
+  } catch (err) {
+    if (err.name === "AbortError") return;
+    statusEl.innerHTML = ""; const e = document.createElement("span"); e.className = "error";
+    e.textContent = "Error: " + err.message; statusEl.append(e);
+  }
+}
+
+$("gen").onclick = () => run(promptEl.value);
+$("rerun").onclick = () => run(lastPrompt ?? promptEl.value);
+promptEl.addEventListener("keydown", e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); run(promptEl.value); } });
+</script>
+</body>
+</html>
